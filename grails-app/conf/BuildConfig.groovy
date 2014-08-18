@@ -24,7 +24,7 @@ grails.project.dependency.resolution = {
     dependencies {
         // specify dependencies here under either 'build', 'compile', 'runtime', 'test' or 'provided' scopes eg.
 
-        compile('org.transmartproject:transmart-core-api:1.0-SNAPSHOT')
+        compile('org.transmartproject:transmart-core-api:1.1.0')
         compile group: 'com.google.guava', name: 'guava', version: '14.0.1'
 
         runtime('postgresql:postgresql:9.1-901.jdbc4') {
@@ -42,8 +42,9 @@ grails.project.dependency.resolution = {
 
     plugins {
         compile(':db-reverse-engineer:0.5') { exported: false }
+        compile ":hibernate:3.6.10.7"
 
-        build(":tomcat:$grailsVersion",
+        build(":tomcat:7.0.47",
               ":release:2.2.1",
               ":rest-client-builder:1.0.3",
               ) {
