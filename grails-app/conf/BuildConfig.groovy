@@ -2,59 +2,62 @@ grails.project.class.dir = "target/classes"
 grails.project.test.class.dir = "target/test-classes"
 grails.project.test.reports.dir = "target/test-reports"
 
+def defaultVMSettings = [
+        maxMemory: 768,
+        minMemory: 64,
+        debug:     false,
+        maxPerm:   256
+]
 
+grails.project.fork = [
+        test:    [*: defaultVMSettings, daemon:      true],
+        run:     [*: defaultVMSettings, forkReserve: false],
+        war:     [*: defaultVMSettings, forkReserve: false],
+        console: defaultVMSettings
+]
+
+grails.project.repos.default = 'repo.thehyve.nl-snapshots'
+grails.project.repos."${grails.project.repos.default}".url = 'https://repo.thehyve.nl/content/repositories/snapshots/'
+
+grails.project.dependency.resolver = 'maven'
 grails.project.dependency.resolution = {
-    // inherit Grails' default dependencies
-    inherits("global") {
-        // uncomment to disable ehcache
-        // excludes 'ehcache'
-    }
-    log "warn" // log level of Ivy resolver, either 'error', 'warn', 'info', 'debug' or 'verbose'
-    legacyResolve false // whether to do a secondary resolve on plugin installation, not advised and here for backwards compatibility
+    log "warn"
+    legacyResolve false
+
+    inherits('global') {}
+
     repositories {
-        mavenRepo([
-                name: 'repo.transmartfoundation.org',
-                root: 'http://repo.transmartfoundation.org/content/repositories/public/'
-        ])
+        //  grailsPlugins()
+        // grailsHome()
         grailsCentral()
+
         mavenLocal()
         mavenCentral()
 
+        mavenRepo 'https://repo.transmartfoundation.org/content/repositories/public/'
+        mavenRepo 'https://repo.thehyve.nl/content/repositories/public/'
     }
-    dependencies {
-        // specify dependencies here under either 'build', 'compile', 'runtime', 'test' or 'provided' scopes eg.
 
-        compile('org.transmartproject:transmart-core-api:1.1.0')
+    dependencies {
+        compile('org.transmartproject:transmart-core-api:1.2.2')
         compile group: 'com.google.guava', name: 'guava', version: '14.0.1'
 
-        runtime('postgresql:postgresql:9.1-901.jdbc4') {
-            transitive: false
+        runtime('org.postgresql:postgresql:9.3-1100-jdbc41') {
+            transitive = false
+            export     = false
         }
-
-        /* for unknown reason, test scope is not enough */
-        compile('junit:junit:4.11') {
-            transitive: false
-        }
-
-        test('org.hamcrest:hamcrest-library:1.3',
-             'org.hamcrest:hamcrest-core:1.3')
     }
 
     plugins {
-        compile(':db-reverse-engineer:0.5') { exported: false }
-        compile ":hibernate:3.6.10.7"
-
-        build(":tomcat:7.0.47",
-              ":release:2.2.1",
-              ":rest-client-builder:1.0.3",
-              ) {
-            exported: false
+        build ':tomcat:7.0.47'
+        build ':release:3.0.1', ':rest-client-builder:2.0.1', {
+            export = false
         }
 
-		test ":code-coverage:1.2.6"
-    }
+        compile(':db-reverse-engineer:0.5') {
+            export = false
+        }
 
-    // see http://jira.grails.org/browse/GPRELEASE-42
-    if (grailsVersion >= '2.1.3')
-        legacyResolve true
+        runtime ':hibernate:3.6.10.4'
+    }
 }

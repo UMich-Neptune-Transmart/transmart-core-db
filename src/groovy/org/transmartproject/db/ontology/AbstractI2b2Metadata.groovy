@@ -1,10 +1,33 @@
+/*
+ * Copyright © 2013-2014 The Hyve B.V.
+ *
+ * This file is part of transmart-core-db.
+ *
+ * Transmart-core-db is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the Free
+ * Software Foundation, either version 3 of the License, or (at your option) any
+ * later version.
+ *
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+ * details.
+ *
+ * You should have received a copy of the GNU General Public License along with
+ * transmart-core-db.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 package org.transmartproject.db.ontology
 
 import grails.orm.HibernateCriteriaBuilder
+import groovy.transform.EqualsAndHashCode
+import org.transmartproject.core.dataquery.Patient
 import org.transmartproject.core.ontology.OntologyTerm
 import org.transmartproject.core.ontology.OntologyTerm.VisualAttributes
+import org.transmartproject.core.ontology.Study
 import org.transmartproject.db.concept.ConceptKey
 
+@EqualsAndHashCode(includes = [ 'fullName', 'name' ])
 abstract class AbstractI2b2Metadata extends AbstractQuerySpecifyingType
         implements OntologyTerm {
 
@@ -59,7 +82,7 @@ abstract class AbstractI2b2Metadata extends AbstractQuerySpecifyingType
     }
 
     boolean isSynonym() {
-        cSynonymCd != 'Y'
+        cSynonymCd == 'Y'
     }
 
     void setSynonym(boolean value) {
@@ -113,12 +136,40 @@ abstract class AbstractI2b2Metadata extends AbstractQuerySpecifyingType
                 equalUnits: slurper.UnitValues?.EqualUnits?.toString(),
         ]
 
+        def seriesMeta = slurper.SeriesMeta
+        if (seriesMeta) {
+            ret.seriesMeta = [
+                    "unit": seriesMeta.Unit?.toString(),
+                    "value": seriesMeta.Value?.toString(),
+                    "label": seriesMeta.DisplayName?.toString(),
+            ]
+        }
         ret
+    }
+
+    @Override
+    Study getStudy() {
+        // since Study (in this sense) is a transmart concept, this only makes
+        // sense for objects from tranSMART's i2b2 metadata table: I2b2
+        null
     }
 
     @Override
     List<OntologyTerm> getChildren(boolean showHidden = false,
                                    boolean showSynonyms = false) {
+
+        getDescendants(false, showHidden, showSynonyms)
+    }
+
+    //@Override
+    List<OntologyTerm> getAllDescendants(boolean showHidden = false,
+                                         boolean showSynonyms = false) {
+        getDescendants(true, showHidden, showSynonyms)
+    }
+
+    private List<OntologyTerm> getDescendants(boolean allDescendants,
+                                              boolean showHidden = false,
+                                              boolean showSynonyms = false) {
         HibernateCriteriaBuilder c
         def fullNameSearch = this.conceptKey.conceptFullName.toString()
                 .asLikeLiteral() + '%'
@@ -127,7 +178,12 @@ abstract class AbstractI2b2Metadata extends AbstractQuerySpecifyingType
         def ret = c.list {
             and {
                 like 'fullName', fullNameSearch
-                eq 'level', level + 1
+                if (allDescendants) {
+                    gt 'level', level
+                } else {
+                    eq 'level', level + 1
+                }
+
                 if (!showHidden) {
                     not { like 'cVisualattributes', '_H%' }
                 }
@@ -139,6 +195,11 @@ abstract class AbstractI2b2Metadata extends AbstractQuerySpecifyingType
         }
         ret.each { it.setTableCode(getTableCode()) }
         ret
+    }
+
+    @Override
+    List<Patient> getPatients() {
+        super.getPatients(this)
     }
 
     @Override

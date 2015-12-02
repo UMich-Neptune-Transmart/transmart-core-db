@@ -1,11 +1,38 @@
+/*
+ * Copyright © 2013-2014 The Hyve B.V.
+ *
+ * This file is part of transmart-core-db.
+ *
+ * Transmart-core-db is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the Free
+ * Software Foundation, either version 3 of the License, or (at your option) any
+ * later version.
+ *
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+ * details.
+ *
+ * You should have received a copy of the GNU General Public License along with
+ * transmart-core-db.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+import org.springframework.stereotype.Component
+import org.transmartproject.db.accesscontrol.AccessControlChecks
+import org.transmartproject.db.dataquery.clinical.InnerClinicalTabularResultFactory
+import org.transmartproject.db.dataquery.clinical.variables.ClinicalVariableFactory
+import org.transmartproject.db.dataquery.highdim.AbstractHighDimensionDataTypeModule
 import org.transmartproject.db.http.BusinessExceptionResolver
-import org.transmartproject.db.support.MarshallerRegistrarService
+import org.transmartproject.db.ontology.AcrossTrialsConceptsResourceDecorator
+import org.transmartproject.db.ontology.AcrossTrialsOntologyTerm
+import org.transmartproject.db.ontology.DefaultConceptsResource
+import org.transmartproject.db.support.DatabasePortabilityService
 
 class TransmartCoreGrailsPlugin {
     // the plugin version
-    def version = "1.1.0"
+    def version = "1.2.2"
     // the version or versions of Grails the plugin is designed for
-    def grailsVersion = "2.2 > *"
+    def grailsVersion = "2.3 > *"
     // resources that are excluded from plugin packaging
     def pluginExcludes = [
         "grails-app/views/error.gsp"
@@ -21,10 +48,7 @@ A runtime dependency for tranSMART that implements the Core API
     // URL to the plugin's documentation
     def documentation = "http://transmartproject.org"
 
-    // Extra (optional) plugin metadata
-
-    // License: one of 'APACHE', 'GPL2', 'GPL3'
-//    def license = "APACHE"
+    def license = "GPL3"
 
     // Details of company behind the plugin (if there is one)
 //    def organization = [ name: "My Company", url: "http://www.my-company.com/" ]
@@ -46,17 +70,57 @@ A runtime dependency for tranSMART that implements the Core API
     }
 
     def doWithSpring = {
+        xmlns context:"http://www.springframework.org/schema/context"
+
+        def config = application.config
+
+        /* unless explicitly disabled, enable across trials functionality */
+        def haveAcrossTrials =
+                config.org.transmartproject.enableAcrossTrials != false
+
         businessExceptionResolver(BusinessExceptionResolver)
+
+        accessControlChecks(AccessControlChecks)
+
+        clinicalVariableFactory(ClinicalVariableFactory) {
+            disableAcrossTrials = !haveAcrossTrials
+        }
+        innerClinicalTabularResultFactory(InnerClinicalTabularResultFactory)
+
+        if (haveAcrossTrials) {
+            conceptsResourceService(AcrossTrialsConceptsResourceDecorator) {
+                inner = new DefaultConceptsResource()
+            }
+        } else {
+            conceptsResourceService(DefaultConceptsResource)
+        }
+
+        context.'component-scan'('base-package': 'org.transmartproject.db.dataquery.highdim') {
+            context.'include-filter'(
+                    type:       'assignable',
+                    expression: AbstractHighDimensionDataTypeModule.canonicalName)
+        }
+
+        context.'component-scan'('base-package': 'org.transmartproject.db.dataquery.highdim') {
+            context.'include-filter'(
+                    type:       'annotation',
+                    expression: Component.canonicalName)
+        }
+
+        if (!config.org.transmartproject.i2b2.user_id) {
+            config.org.transmartproject.i2b2.user_id = 'i2b2'
+        }
+        if (!config.org.transmartproject.i2b2.group_id) {
+            config.org.transmartproject.i2b2.group_id = 'Demo'
+        }
     }
 
     def doWithDynamicMethods = { ctx ->
         String.metaClass.asLikeLiteral = { replaceAll(/[\\%_]/, '\\\\$0') }
-    }
 
-    def doWithApplicationContext = { applicationContext ->
-        MarshallerRegistrarService bean =
-            applicationContext.getBean(MarshallerRegistrarService)
-        bean.scanForClasses(applicationContext)
+        /* Force this bean to be initialized, as it has some dynamic methods
+         * to register during its init() method */
+        ctx.getBean DatabasePortabilityService
     }
 
     def onChange = { event ->
