@@ -43,6 +43,10 @@ class PatientSetQueryBuilderService {
                                    User user = null)
             throws InvalidRequestException {
 
+        log.info("querytool.PatientSetQueryBuilderService - buildPatientIdListQuery args: " +
+                "QueryDefinition definition = " + definition + ", " +
+                "User user = " + user)
+
         generalDefinitionValidation(definition)
 
         def panelNum = 1
@@ -127,6 +131,7 @@ class PatientSetQueryBuilderService {
         }
 
         def patientSubQuery = buildPatientIdListQuery definition, user
+        log.info "patientSubQuery: $patientSubQuery"
 
         //$patientSubQuery has result set with single column: 'patient_num'
         def windowFunctionOrderBy = ''

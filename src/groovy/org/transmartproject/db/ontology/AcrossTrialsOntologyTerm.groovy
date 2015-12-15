@@ -69,4 +69,8 @@ class AcrossTrialsOntologyTerm extends AbstractAcrossTrialsOntologyTerm {
     Object getMetadata() {
         [okToUseValues: modifierDimension.valueType == 'N']
     }
+
+    Object getMetadataxml() {
+        return null;
+    }
 }

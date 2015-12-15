@@ -40,23 +40,28 @@ class AcrossTrialsConceptsResourceDecorator implements ConceptsResource {
 
     @Override
     OntologyTerm getByKey(String conceptKey) throws NoSuchResourceException {
+        print("============> AcrossTrialsConceptsResourceDecorator")
+        print(conceptKey)
         def conceptKeyObj = new ConceptKey(conceptKey)
 
+        print(conceptKeyObj.tableCode != ACROSS_TRIALS_TABLE_CODE)
         if (conceptKeyObj.tableCode != ACROSS_TRIALS_TABLE_CODE) {
             return inner.getByKey(conceptKey)
         }
 
         def fullName = conceptKeyObj.conceptFullName
+        print(fullName[0] != ACROSS_TRIALS_TOP_TERM_NAME)
         if (fullName[0] != ACROSS_TRIALS_TOP_TERM_NAME) {
             throw new NoSuchResourceException("All the across trials terms' " +
                     "first path component should be " +
                     "${ACROSS_TRIALS_TOP_TERM_NAME}")
         }
-
+        print(fullName.length)
         if (fullName.length == 1) {
             topTerm
         } else { // > 1
             String modifier_path = "\\${fullName[1..-1].join '\\'}\\"
+            print modifier_path
             def modifier = ModifierDimensionView.get(modifier_path)
             if (!modifier) {
                 throw new NoSuchResourceException('Could not find across ' +
