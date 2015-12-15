@@ -40,29 +40,39 @@ class AcrossTrialsConceptsResourceDecorator implements ConceptsResource {
 
     @Override
     OntologyTerm getByKey(String conceptKey) throws NoSuchResourceException {
-        print("============> AcrossTrialsConceptsResourceDecorator")
-        print(conceptKey)
+        //print("============> AcrossTrialsConceptsResourceDecorator")
+        //print(conceptKey)
         def conceptKeyObj = new ConceptKey(conceptKey)
 
-        print(conceptKeyObj.tableCode != ACROSS_TRIALS_TABLE_CODE)
+        //print(conceptKeyObj.tableCode != ACROSS_TRIALS_TABLE_CODE)
         if (conceptKeyObj.tableCode != ACROSS_TRIALS_TABLE_CODE) {
             return inner.getByKey(conceptKey)
         }
 
         def fullName = conceptKeyObj.conceptFullName
-        print(fullName[0] != ACROSS_TRIALS_TOP_TERM_NAME)
+        //print(fullName[0] != ACROSS_TRIALS_TOP_TERM_NAME)
         if (fullName[0] != ACROSS_TRIALS_TOP_TERM_NAME) {
             throw new NoSuchResourceException("All the across trials terms' " +
                     "first path component should be " +
                     "${ACROSS_TRIALS_TOP_TERM_NAME}")
         }
-        print(fullName.length)
+        //print(fullName.length)
         if (fullName.length == 1) {
             topTerm
         } else { // > 1
-            String modifier_path = "\\${fullName[1..-1].join '\\'}\\"
-            print modifier_path
-            def modifier = ModifierDimensionView.get(modifier_path)
+            // note numberis concepts do not end in \ while category concepts do
+            // not sure why this is the case, but because of this I'm
+            // testing both cases: Terry Weymouth - 15Dec2015
+            String modifier_pathA = "\\${fullName[1..-1].join '\\'}\\"
+            String modifier_pathB = "\\${fullName[1..-1].join '\\'}"
+            //print modifier_pathA
+            //print modifier_pathB
+            def modifier = ModifierDimensionView.get(modifier_pathA)
+            //print (modifier)
+            if (!modifier) {
+                modifier = ModifierDimensionView.get(modifier_pathB)
+            }
+            //print (modifier)
             if (!modifier) {
                 throw new NoSuchResourceException('Could not find across ' +
                         "trials node with modifier_path $modifier_path")
