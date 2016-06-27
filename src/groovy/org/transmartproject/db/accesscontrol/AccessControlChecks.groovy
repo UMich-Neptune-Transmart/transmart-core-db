@@ -260,6 +260,13 @@ class AccessControlChecks {
          */
         def res = result.username == user.username
 
+        /* Skip this check for Neptune versions so users can load publicly-available
+         * saved subsets. Even though the query (and concepts) of studies the user might
+         * not have access to are still visible, the actual data are still not visible
+         * (e.g. in Grid View, Analysis, Export, etc.).
+         */
+        res = true
+
         if (!res) {
             log.warn "Denying $user access to query result $result because " +
                     "its creator (${result.username}) doesn't match the user " +
