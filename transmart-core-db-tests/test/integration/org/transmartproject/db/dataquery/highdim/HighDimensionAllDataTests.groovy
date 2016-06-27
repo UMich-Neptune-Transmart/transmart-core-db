@@ -38,6 +38,7 @@ import org.transmartproject.db.dataquery.highdim.protein.ProteinTestData
 import org.transmartproject.db.dataquery.highdim.rbm.RbmTestData
 import org.transmartproject.db.dataquery.highdim.rnaseq.RnaSeqTestData
 import org.transmartproject.db.dataquery.highdim.rnaseqcog.RnaSeqCogTestData
+import org.transmartproject.db.dataquery.highdim.tworegion.TwoRegionTestData
 import org.transmartproject.db.dataquery.highdim.vcf.VcfTestData
 import org.transmartproject.db.test.RuleBasedIntegrationTestMixin
 
@@ -60,7 +61,7 @@ class HighDimensionAllDataTests {
     static Collection<Object[]> getParameters() { return [
         [
             'metabolite',
-            [rawIntensity: BigDecimal, logIntensity: BigDecimal, zscore: BigDecimal],
+            [rawIntensity: double, logIntensity: double, zscore: double],
             [hmdbId:String, biochemicalName:String],
             MetaboliteTestData
         ], [
@@ -94,6 +95,11 @@ class HighDimensionAllDataTests {
             [annotationId:String, geneSymbol:String, geneId:String],
             RnaSeqCogTestData
         ], [
+            'two_region',
+            [downChromosome:String, upChromosome: String, id:Long, upEnd:Long, upPos:Long, upStrand:Character, downEnd:Long, downPos:Long, downStrand:Character, isInFrame: Boolean],
+            [:],
+            TwoRegionTestData
+        ], [
             'vcf',
             [reference:Boolean, variant:String, variantType:String],
             [chromosome:String, position:Long, rsId: String, referenceAllele:String],
@@ -108,8 +114,8 @@ class HighDimensionAllDataTests {
             AcghTestData
         ], [
             'rnaseq',
-            [readCount:Integer],
-            [bioMarker: String],
+            [readcount:Integer, normalizedReadcount:Double, logNormalizedReadcount:Double, zscore:Double],
+            [id: Long, name:String, cytoband:String, chromosome:String, start:Long, end:Long, numberOfProbes:Integer, bioMarker: String],
             RnaSeqTestData
         ]
     ].collect {it.toArray()}}
@@ -141,7 +147,6 @@ class HighDimensionAllDataTests {
 
         def result = type.retrieveData([], [], genericProjection)
         try {
-            def indicesList = result.indicesList
             def firstrow = result.iterator().next()
 
             assertThat firstrow, is(notNullValue())
@@ -155,22 +160,33 @@ class HighDimensionAllDataTests {
                         firstrow."$prop".getClass(), typeCompatibleWith(type)
             }
 
-            def data = firstrow[indicesList[0]]
+            def data = firstrow.find()
 
             assertThat data, is(notNullValue())
-            assertThat data, is(instanceOf(Map))
             dataProperties.each { col, type ->
                 assertThat genericProjection.dataProperties, hasKey(col)
                 assertThat genericProjection.dataProperties[col], is((Object) type)
             }
-            genericProjection.dataProperties.each { col, type ->
-                assertThat data, hasKey(col)
-                for(int i in 1..5) {
-                    println('**************************************************************************************')
+            genericProjection.dataProperties.each { String col, Class type ->
+                assertThat data, anyOf(
+                        hasKey(col),
+                        hasProperty(col))
+
+                def targetType = type
+                if (type.isPrimitive()) {
+                    // groovy will box the primitive next, so convert the type
+                    // to the boxed one
+                    switch (type) {
+                        case Double.TYPE:
+                            targetType = Double
+                            break
+                        default:
+                            throw new UnsupportedOperationException()
+                    }
                 }
-                println("key: $col, value: ${data."$col"}, type: ${data."$col".getClass()}")
+
                 assertThat  "${owner.type.dataTypeName}: $col is not of expected type.",
-                        data."$col".getClass(), typeCompatibleWith(type)
+                        data."$col".getClass(), typeCompatibleWith(targetType)
             }
         } finally {
             result?.close()

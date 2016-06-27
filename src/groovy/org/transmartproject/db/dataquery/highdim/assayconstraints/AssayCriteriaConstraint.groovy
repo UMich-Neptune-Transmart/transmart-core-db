@@ -19,13 +19,7 @@
 
 package org.transmartproject.db.dataquery.highdim.assayconstraints
 
-import grails.orm.HibernateCriteriaBuilder
-import org.transmartproject.core.exceptions.InvalidRequestException
+import org.transmartproject.core.dataquery.highdim.assayconstraints.AssayConstraint
+import org.transmartproject.db.dataquery.CriteriaConstraint
 
-class NoopAssayConstraint extends AbstractAssayConstraint {
-
-    @Override
-    void addConstraintsToCriteria(HibernateCriteriaBuilder builder) throws InvalidRequestException {
-        // purposefully left empty
-    }
-}
+interface AssayCriteriaConstraint extends AssayConstraint, CriteriaConstraint {}

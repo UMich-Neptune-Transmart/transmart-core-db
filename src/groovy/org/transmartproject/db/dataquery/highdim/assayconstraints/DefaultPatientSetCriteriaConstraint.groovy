@@ -19,18 +19,27 @@
 
 package org.transmartproject.db.dataquery.highdim.assayconstraints
 
-import grails.orm.HibernateCriteriaBuilder
-import org.transmartproject.core.exceptions.InvalidRequestException
+import groovy.transform.Canonical
+import org.grails.datastore.mapping.query.api.Criteria
+import org.transmartproject.core.querytool.QueryResult
+import org.transmartproject.db.querytool.QtPatientSetCollection
 
-class AssayIdListConstraint extends AbstractAssayConstraint {
+@Canonical
+class DefaultPatientSetCriteriaConstraint implements AssayCriteriaConstraint {
 
-    List<Long> ids
+    QueryResult queryResult
 
     @Override
-    void addConstraintsToCriteria(HibernateCriteriaBuilder builder) throws InvalidRequestException {
-        /** @see org.transmartproject.db.dataquery.highdim.DeSubjectSampleMapping */
-        builder.with {
-            'in' 'id', ids
-        }
+    void addToCriteria(Criteria criteria) {
+        criteria.in('patient.id',
+            QtPatientSetCollection.where {
+                projections {
+                    property 'patient.id'
+                }
+
+                eq 'resultInstance', this.queryResult
+            }
+        )
     }
+
 }

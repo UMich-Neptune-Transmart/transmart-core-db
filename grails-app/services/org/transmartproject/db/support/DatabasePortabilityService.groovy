@@ -145,6 +145,13 @@ class DatabasePortabilityService {
         )
     }
 
+    String toChar(String expr){
+        runCorrectImplementation(
+                {"CAST($expr as character varying)"},
+                {"to_char($expr)"}
+        )
+    }
+
     /**
      * Convert pagination limits for use with queries transformed with the
      * methods available in this class.
@@ -168,7 +175,7 @@ class DatabasePortabilityService {
      */
     String getNextSequenceValueSql(String schema, String sequenceName) {
         runCorrectImplementation(
-                { "SELECT nextval('${schema}.${sequenceName})" },
+                { "SELECT nextval('${schema}.${sequenceName}')" },
                 { "SELECT ${schema}.${sequenceName}.nextval FROM DUAL" }
         )
     }

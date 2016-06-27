@@ -19,22 +19,19 @@
 
 package org.transmartproject.db.dataquery.highdim.assayconstraints
 
-import grails.orm.HibernateCriteriaBuilder
 import groovy.transform.Canonical
-import org.transmartproject.core.exceptions.InvalidRequestException
+import org.grails.datastore.mapping.query.api.Criteria
 
 @Canonical
-class MarkerTypeConstraint extends AbstractAssayConstraint {
+class MarkerTypeCriteriaConstraint implements AssayCriteriaConstraint {
 
     List platformNames
 
     @Override
-    void addConstraintsToCriteria(HibernateCriteriaBuilder builder) throws InvalidRequestException {
+    void addToCriteria(Criteria criteria) {
         /** @see org.transmartproject.db.dataquery.highdim.DeSubjectSampleMapping */
-        builder.with {
-            platform {
-                'in' 'markerType', platformNames 
-            }
+        criteria.platform {
+            'in' 'markerType', platformNames
         }
     }
 }
